@@ -1,14 +1,42 @@
+use csv::StringRecord;
 use std::fmt::Debug;
 use std::fs::File;
-use std::io;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::{fmt, io, process};
 
 #[derive(Debug)]
 struct RedirectDefinition {
-    name: String,
+    name: Option<String>,
     source: String,
     target: String,
+}
+
+impl RedirectDefinition {
+    fn new(record: StringRecord) -> Result<RedirectDefinition, IncorrectRow> {
+        match record.len() {
+            2 => Ok(RedirectDefinition {
+                name: None,
+                source: record[0].to_owned(),
+                target: record[1].to_owned(),
+            }),
+            3 => Ok(RedirectDefinition {
+                name: Some(record[0].to_owned()),
+                source: record[1].to_owned(),
+                target: record[2].to_owned(),
+            }),
+            _ => Err(IncorrectRow),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct IncorrectRow;
+
+impl fmt::Display for IncorrectRow {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "CSV rows need to have 2 or 3 columns.")
+    }
 }
 
 fn main() {
@@ -38,16 +66,20 @@ fn read_csv(path: PathBuf) -> std::io::Result<()> {
     let mut content = String::new();
     file.read_to_string(&mut content)?;
 
-    let content = content.to_owned();
     let mut reader = csv::Reader::from_reader(content.as_bytes());
     let mut records = vec![];
     for record in reader.records() {
         let record = record?;
-        records.push(RedirectDefinition {
-            name: record[0].to_owned(),
-            source: record[1].to_owned(),
-            target: record[2].to_owned(),
-        });
+        let record_object = {
+            match RedirectDefinition::new(record) {
+                Ok(record) => record,
+                Err(IncorrectRow) => {
+                    eprintln!("{}", IncorrectRow);
+                    process::exit(1);
+                }
+            }
+        };
+        records.push(record_object);
     }
     println!("{:?}", records);
 

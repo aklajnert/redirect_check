@@ -17,7 +17,10 @@ fn main() {
             process::exit(1);
         }
     };
-    println!("{:?}", records);
+
+    for record in records {
+        println!("{}", record.check_redirect());
+    }
 }
 
 fn get_path() -> PathBuf {

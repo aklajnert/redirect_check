@@ -1,5 +1,6 @@
-use csv::StringRecord;
 use std::fmt;
+
+use csv::StringRecord;
 
 #[derive(Debug)]
 pub struct RedirectDefinition {
@@ -23,6 +24,30 @@ impl RedirectDefinition {
             }),
             _ => Err(IncorrectRow),
         }
+    }
+
+    pub fn check_redirect(&self) -> String {
+        let response = match self.query() {
+            Ok(status) => status,
+            Err(_) => String::from(""),
+        };
+
+        match response.as_str() {
+            "200" => String::from(format!("OK: {}", &self.source)),
+            _ => String::from(format!("Fail: {}", &self.source)),
+        }
+    }
+
+    fn query(&self) -> Result<String, Box<dyn std::error::Error>> {
+        let client = reqwest::blocking::Client::builder()
+            .user_agent(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
+                (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36",
+            )
+            .build()?;
+        let resp = client.get(&self.source.to_owned()).send()?;
+        // println!("{:#?}", resp);
+        Ok(String::from(resp.status().as_str()))
     }
 }
 

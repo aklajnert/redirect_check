@@ -10,7 +10,14 @@ fn main() {
     let path = get_path();
     println!("Provided path: {:?}", path);
 
-    read_csv(path).unwrap();
+    let records = match read_csv(path) {
+        Ok(records) => records,
+        Err(error) => {
+            eprintln!("Failed to load CSV data: {}", error);
+            process::exit(1);
+        }
+    };
+    println!("{:?}", records);
 }
 
 fn get_path() -> PathBuf {
@@ -28,7 +35,7 @@ fn get_path() -> PathBuf {
     }
 }
 
-fn read_csv(path: PathBuf) -> std::io::Result<()> {
+fn read_csv(path: PathBuf) -> std::io::Result<Vec<RedirectDefinition>> {
     let mut file = File::open(path)?;
     let mut content = String::new();
     file.read_to_string(&mut content)?;
@@ -46,7 +53,6 @@ fn read_csv(path: PathBuf) -> std::io::Result<()> {
         };
         records.push(record_object);
     }
-    println!("{:?}", records);
 
-    Ok(())
+    Ok(records)
 }

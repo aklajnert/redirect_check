@@ -1,6 +1,7 @@
 use std::fmt;
 
 use csv::StringRecord;
+use std::error::Error;
 
 #[derive(Debug)]
 pub struct RedirectDefinition {
@@ -38,7 +39,7 @@ impl RedirectDefinition {
         }
     }
 
-    fn query(&self) -> Result<String, Box<dyn std::error::Error>> {
+    fn query(&self) -> Result<String, Box<dyn Error>> {
         let client = reqwest::blocking::Client::builder()
             .user_agent(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
@@ -46,8 +47,9 @@ impl RedirectDefinition {
             )
             .build()?;
         let resp = client.get(&self.source.to_owned()).send()?;
-        if resp.status().as_str() != "200" {
-            return Ok(String::from(""));
+        let status = String::from(resp.status().as_str());
+        if status != "200" {
+            return Err(Box::new(HttpError { error: status }));
         };
         Ok(String::from(resp.url().as_str()))
     }
@@ -59,5 +61,26 @@ pub struct IncorrectRow;
 impl fmt::Display for IncorrectRow {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "CSV rows need to have 2 or 3 columns.")
+    }
+}
+impl Error for IncorrectRow {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        Some(self)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct HttpError {
+    error: String,
+}
+
+impl fmt::Display for HttpError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "HTTP Error: {}", self.error)
+    }
+}
+impl Error for HttpError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        Some(self)
     }
 }

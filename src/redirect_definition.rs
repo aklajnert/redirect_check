@@ -27,14 +27,14 @@ impl RedirectDefinition {
     }
 
     pub fn check_redirect(&self) -> String {
-        let response = match self.query() {
+        let url = match self.query() {
             Ok(status) => status,
             Err(_) => String::from(""),
         };
 
-        match response.as_str() {
-            "200" => String::from(format!("OK: {}", &self.source)),
-            _ => String::from(format!("Fail: {}", &self.source)),
+        match url.as_str() {
+            url_ if self.target.ends_with(url_) => String::from(format!("OK: {}", &self.source)),
+            "" | _ => String::from(format!("Fail: {}", &self.source)),
         }
     }
 
@@ -46,8 +46,10 @@ impl RedirectDefinition {
             )
             .build()?;
         let resp = client.get(&self.source.to_owned()).send()?;
-        // println!("{:#?}", resp);
-        Ok(String::from(resp.status().as_str()))
+        if resp.status().as_str() != "200" {
+            return Ok(String::from(""));
+        };
+        Ok(String::from(resp.url().as_str()))
     }
 }
 

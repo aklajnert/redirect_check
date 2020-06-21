@@ -28,7 +28,10 @@ fn get_path() -> PathBuf {
         let mut definitions_path = String::new();
         println!("Provide path to the redirect definitions file:");
         io::stdin().read_line(&mut definitions_path).unwrap();
-        let definitions_path = definitions_path.trim();
+
+        // strip whitespaces and quotations (from drag&drop on Windows)
+        let definitions_path = definitions_path.trim().trim_matches('"');
+
         let path = Path::new(&definitions_path);
         if !path.exists() {
             eprintln!("File doesn't exists.");

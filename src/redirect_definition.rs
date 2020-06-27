@@ -1,9 +1,8 @@
-use std::fmt;
-
 use csv::StringRecord;
 use std::error::Error;
+use std::fmt;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct RedirectDefinition {
     pub name: Option<String>,
     pub source: String,
@@ -15,14 +14,14 @@ impl RedirectDefinition {
     pub fn new(record: StringRecord) -> Result<RedirectDefinition, IncorrectRow> {
         match record.len() {
             2 => Ok(RedirectDefinition {
-                source: record[0].to_owned(),
-                target: record[1].to_owned(),
+                source: record[0].to_string(),
+                target: record[1].trim_end_matches('/').to_string(),
                 ..Default::default()
             }),
             3 => Ok(RedirectDefinition {
-                name: Some(record[0].to_owned()),
-                source: record[1].to_owned(),
-                target: record[2].to_owned(),
+                name: Some(record[0].to_string()),
+                source: record[1].to_string(),
+                target: record[2].trim_end_matches('/').to_string(),
                 ..Default::default()
             }),
             _ => Err(IncorrectRow),
@@ -32,13 +31,13 @@ impl RedirectDefinition {
     pub fn resolve(&mut self) {
         let query_result = self.query();
         if query_result.is_ok() {
-            self.resolved_url = Some(query_result.unwrap())
+            self.resolved_url = Some(query_result.unwrap().trim_end_matches('/').to_string())
         }
     }
 
     pub fn is_correct(&self) -> bool {
         match &self.resolved_url {
-            Some(url) => self.target.ends_with(url),
+            Some(url) => url.ends_with(&self.target),
             None => false,
         }
     }
@@ -50,7 +49,7 @@ impl RedirectDefinition {
                 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36",
             )
             .build()?;
-        let resp = client.get(&self.source.to_owned()).send()?;
+        let resp = client.get(&self.source.to_string()).send()?;
         let status = String::from(resp.status().as_str());
         if status != "200" {
             return Err(Box::new(HttpError { error: status }));

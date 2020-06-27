@@ -20,9 +20,10 @@ fn main() {
 
     for mut record in records {
         record.resolve();
-        match record.is_correct() {
-            true => println!("OK: {}", record.source),
-            false => println!("Fail: {} -> {:?}", record.source, record.resolved_url),
+        if record.is_correct() {
+            println!("OK: {}", record.source)
+        } else {
+            println!("Fail: {} -> {:?}", record.source, record.resolved_url)
         }
     }
 }

@@ -21,9 +21,9 @@ fn main() {
     for mut record in records {
         record.resolve();
         if record.is_correct() {
-            println!("OK: {}", record.source)
+            println!("OK: {}", record)
         } else {
-            println!("Fail: {} -> {:?}", record.source, record.resolved_url)
+            println!("Fail: {} -> {:?}", record, record.resolved_url)
         }
     }
 }

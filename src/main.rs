@@ -8,7 +8,6 @@ use crate::redirect_definition::RedirectDefinition;
 
 fn main() {
     let path = get_path();
-    println!("Provided path: {:?}", path);
 
     let records = match read_csv(path) {
         Ok(records) => records,
@@ -29,25 +28,8 @@ fn main() {
             failed_records.push(record);
         }
     }
-    if failed_records.len() == 0 {
-        println!("\nAll redirects are correct.");
-    } else {
-        println!(
-            "\n{}/{} tests failed.\nFailures:\n---------",
-            failed_records.len(),
-            records_count
-        );
-        for failure in failed_records {
-            let resolved = match &failure.resolved_url {
-                Some(result) => result.to_string(),
-                None => "Failed to resolve".to_string(),
-            };
-            println!(
-                "\n{}\n\tExpected: {}\n\tGot: {}",
-                failure, failure.source, resolved
-            );
-        }
-    }
+    show_summary(records_count, &mut failed_records);
+    pause();
 }
 
 fn get_path() -> PathBuf {
@@ -56,7 +38,7 @@ fn get_path() -> PathBuf {
         println!("Provide path to the redirect definitions file:");
         io::stdin().read_line(&mut definitions_path).unwrap();
 
-        // strip whitespaces and quotations (from drag&drop on Windows)
+        // strip whitespaces and quotations (in case if there's a space in the path on Windows)
         let definitions_path = definitions_path.trim().trim_matches('"');
 
         let path = Path::new(&definitions_path);
@@ -90,4 +72,32 @@ fn read_csv(path: PathBuf) -> std::io::Result<Vec<RedirectDefinition>> {
     }
 
     Ok(records)
+}
+
+fn show_summary(records_count: usize, failed_records: &mut Vec<RedirectDefinition>) {
+    if failed_records.len() == 0 {
+        println!("\nAll redirects are correct.");
+    } else {
+        println!(
+            "\n{}/{} tests failed.\nFailures:\n---------",
+            failed_records.len(),
+            records_count
+        );
+        for failure in failed_records {
+            let resolved = match &failure.resolved_url {
+                Some(result) => result.to_string(),
+                None => "Failed to resolve".to_string(),
+            };
+            println!(
+                "\n{}\n\tExpected: {}\n\tGot: {}",
+                failure, failure.source, resolved
+            );
+        }
+    }
+}
+
+fn pause() {
+    println!("Press ENTER to exit...");
+    let mut line = String::new();
+    io::stdin().read_line(&mut line).unwrap();
 }

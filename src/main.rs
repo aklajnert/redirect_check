@@ -17,13 +17,35 @@ fn main() {
             process::exit(1);
         }
     };
+    let records_count = records.len();
 
+    let mut failed_records = vec![];
     for mut record in records {
         record.resolve();
         if record.is_correct() {
-            println!("OK: {}", record)
+            println!("OK: {}", record);
         } else {
-            println!("Fail: {} -> {:?}", record, record.resolved_url)
+            println!("Fail: {}", record);
+            failed_records.push(record);
+        }
+    }
+    if failed_records.len() == 0 {
+        println!("\nAll redirects are correct.");
+    } else {
+        println!(
+            "\n{}/{} tests failed.\nFailures:\n---------",
+            failed_records.len(),
+            records_count
+        );
+        for failure in failed_records {
+            let resolved = match &failure.resolved_url {
+                Some(result) => result.to_string(),
+                None => "Failed to resolve".to_string(),
+            };
+            println!(
+                "\n{}\n\tExpected: {}\n\tGot: {}",
+                failure, failure.source, resolved
+            );
         }
     }
 }
@@ -62,7 +84,9 @@ fn read_csv(path: PathBuf) -> std::io::Result<Vec<RedirectDefinition>> {
                 process::exit(1);
             }
         };
-        records.push(record_object);
+        if record_object.source.len() > 0 && record_object.target.len() > 0 {
+            records.push(record_object);
+        }
     }
 
     Ok(records)

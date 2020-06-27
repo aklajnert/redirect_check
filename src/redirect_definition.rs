@@ -61,7 +61,7 @@ impl RedirectDefinition {
 impl fmt::Display for RedirectDefinition {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.name {
-            Some(name) => write!(f, "{}", name),
+            Some(name) => write!(f, "{} ({})", name, self.source),
             None => write!(f, "{}", self.source),
         }
     }

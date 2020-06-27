@@ -3,39 +3,43 @@ use std::fmt;
 use csv::StringRecord;
 use std::error::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct RedirectDefinition {
-    name: Option<String>,
-    source: String,
-    target: String,
+    pub name: Option<String>,
+    pub source: String,
+    pub target: String,
+    pub resolved_url: Option<String>,
 }
 
 impl RedirectDefinition {
     pub fn new(record: StringRecord) -> Result<RedirectDefinition, IncorrectRow> {
         match record.len() {
             2 => Ok(RedirectDefinition {
-                name: None,
                 source: record[0].to_owned(),
                 target: record[1].to_owned(),
+                ..Default::default()
             }),
             3 => Ok(RedirectDefinition {
                 name: Some(record[0].to_owned()),
                 source: record[1].to_owned(),
                 target: record[2].to_owned(),
+                ..Default::default()
             }),
             _ => Err(IncorrectRow),
         }
     }
 
-    pub fn check_redirect(&self) -> String {
-        let url = match self.query() {
-            Ok(status) => status,
-            Err(_) => String::from(""),
-        };
+    pub fn resolve(&mut self) {
+        let query_result = self.query();
+        if query_result.is_ok() {
+            self.resolved_url = Some(query_result.unwrap())
+        }
+    }
 
-        match url.as_str() {
-            url_ if self.target.ends_with(url_) => String::from(format!("OK: {}", &self.source)),
-            "" | _ => String::from(format!("Fail: {}", &self.source)),
+    pub fn is_correct(&self) -> bool {
+        match &self.resolved_url {
+            Some(url) => self.target.ends_with(url),
+            None => false,
         }
     }
 

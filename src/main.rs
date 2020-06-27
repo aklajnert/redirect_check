@@ -18,8 +18,12 @@ fn main() {
         }
     };
 
-    for record in records {
-        println!("{}", record.check_redirect());
+    for mut record in records {
+        record.resolve();
+        match record.is_correct() {
+            true => println!("OK: {}", record.source),
+            false => println!("Fail: {} -> {:?}", record.source, record.resolved_url),
+        }
     }
 }
 

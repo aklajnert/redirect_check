@@ -3,6 +3,8 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::{io, process};
 
+use ansi_term::Color;
+
 mod redirect_definition;
 use crate::redirect_definition::RedirectDefinition;
 
@@ -22,9 +24,9 @@ fn main() {
     for mut record in records {
         record.resolve();
         if record.is_correct() {
-            println!("OK: {}", record);
+            println!("{}: {}", Color::Green.paint("OK"), record);
         } else {
-            println!("Fail: {}", record);
+            println!("{}: {}", Color::Red.paint("Fail"), record);
             failed_records.push(record);
         }
     }
@@ -76,12 +78,13 @@ fn read_csv(path: PathBuf) -> std::io::Result<Vec<RedirectDefinition>> {
 
 fn show_summary(records_count: usize, failed_records: &mut Vec<RedirectDefinition>) {
     if failed_records.len() == 0 {
-        println!("\nAll redirects are correct.");
+        println!("{}", Color::Green.paint("\nAll redirects are correct."));
     } else {
         println!(
-            "\n{}/{} tests failed.\nFailures:\n---------",
-            failed_records.len(),
-            records_count
+            "\n{}/{} tests failed.\n\n{}\n---------",
+            Color::Red.paint(failed_records.len().to_string()),
+            Color::Blue.paint(records_count.to_string()),
+            Color::Red.paint("Failures:")
         );
         for failure in failed_records {
             let resolved = match &failure.resolved_url {
@@ -97,7 +100,7 @@ fn show_summary(records_count: usize, failed_records: &mut Vec<RedirectDefinitio
 }
 
 fn pause() {
-    println!("Press ENTER to exit...");
+    println!("\nPress ENTER to exit...");
     let mut line = String::new();
     io::stdin().read_line(&mut line).unwrap();
 }

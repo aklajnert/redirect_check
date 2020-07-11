@@ -1,6 +1,7 @@
-use csv::StringRecord;
 use std::error::Error;
 use std::fmt;
+
+use csv::StringRecord;
 
 #[derive(Debug, Default, Clone)]
 pub struct RedirectDefinition {
@@ -75,6 +76,7 @@ impl fmt::Display for IncorrectRow {
         write!(f, "CSV rows need to have 2 or 3 columns.")
     }
 }
+
 impl Error for IncorrectRow {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         Some(self)
@@ -91,8 +93,39 @@ impl fmt::Display for HttpError {
         write!(f, "HTTP Error: {}", self.error)
     }
 }
+
 impl Error for HttpError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         Some(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bad_instantiation() {
+        assert!(RedirectDefinition::new(StringRecord::new()).is_err());
+        assert!(RedirectDefinition::new(StringRecord::from(vec!["a", "b", "c", "d"])).is_err());
+    }
+
+    #[test]
+    fn test_good_instantiation() {
+        let no_name_definition =
+            RedirectDefinition::new(StringRecord::from(vec!["source_url", "target_url"]));
+        assert!(no_name_definition.is_ok());
+        let no_name_definition = no_name_definition.unwrap();
+        assert!(no_name_definition.name.is_none());
+        assert_eq!(no_name_definition.source, "source_url");
+        assert_eq!(no_name_definition.target, "target_url");
+
+        let complete_definition =
+            RedirectDefinition::new(StringRecord::from(vec!["name", "source_url", "target_url"]));
+        assert!(complete_definition.is_ok());
+        let complete_definition = complete_definition.unwrap();
+        assert_eq!(complete_definition.name, Some("name".to_string()));
+        assert_eq!(complete_definition.source, "source_url");
+        assert_eq!(complete_definition.target, "target_url");
     }
 }

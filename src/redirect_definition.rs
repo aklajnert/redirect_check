@@ -105,13 +105,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_bad_instantiation() {
+    fn bad_instantiation() {
         assert!(RedirectDefinition::new(StringRecord::new()).is_err());
         assert!(RedirectDefinition::new(StringRecord::from(vec!["a", "b", "c", "d"])).is_err());
     }
 
     #[test]
-    fn test_good_instantiation() {
+    fn good_instantiation() {
         let no_name_definition =
             RedirectDefinition::new(StringRecord::from(vec!["source_url", "target_url"]));
         assert!(no_name_definition.is_ok());
@@ -127,5 +127,27 @@ mod tests {
         assert_eq!(complete_definition.name, Some("name".to_string()));
         assert_eq!(complete_definition.source, "source_url");
         assert_eq!(complete_definition.target, "target_url");
+    }
+
+    #[test]
+    fn valid_url_resolve() {
+        let mut redirect_definition = RedirectDefinition::new(StringRecord::from(vec![
+            "https://bitly.com/2YX2mnI",
+            "pages/privacy",
+        ]))
+        .unwrap();
+        redirect_definition.resolve();
+        assert!(redirect_definition.is_correct());
+    }
+
+    #[test]
+    fn invalid_url_resolve() {
+        let mut redirect_definition = RedirectDefinition::new(StringRecord::from(vec![
+            "https://bitly.com/2YX2mnI",
+            "https://bitly.com/pages/wrong",
+        ]))
+        .unwrap();
+        redirect_definition.resolve();
+        assert!(!redirect_definition.is_correct());
     }
 }

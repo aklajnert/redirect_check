@@ -10,3 +10,4 @@ edition = "2018"
 csv = "1.1"
 reqwest = { version = "0.10", features = ["blocking"] }
 ansi_term = "0.12"
+tokio = {version = "0.2.22", features = ["macros"] }

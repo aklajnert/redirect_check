@@ -29,8 +29,8 @@ impl RedirectDefinition {
         }
     }
 
-    pub fn resolve(&mut self) {
-        let query_result = self.query();
+    pub async fn resolve(&mut self) {
+        let query_result = self.query().await;
         if query_result.is_ok() {
             self.resolved_url = Some(query_result.unwrap().trim_end_matches('/').to_string())
         }
@@ -43,14 +43,14 @@ impl RedirectDefinition {
         }
     }
 
-    fn query(&self) -> Result<String, Box<dyn Error>> {
-        let client = reqwest::blocking::Client::builder()
+    async fn query(&self) -> Result<String, Box<dyn Error>> {
+        let client = reqwest::Client::builder()
             .user_agent(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
                 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36",
             )
             .build()?;
-        let resp = client.get(&self.source.to_string()).send()?;
+        let resp = client.get(&self.source.to_string()).send().await?;
         let status = String::from(resp.status().as_str());
         if status != "200" {
             return Err(Box::new(HttpError { error: status }));
@@ -129,25 +129,26 @@ mod tests {
         assert_eq!(complete_definition.target, "target_url");
     }
 
-    #[test]
-    fn valid_url_resolve() {
+    #[tokio::test]
+    async fn valid_url_resolve() {
         let mut redirect_definition = RedirectDefinition::new(StringRecord::from(vec![
             "https://bitly.com/2YX2mnI",
             "pages/privacy",
         ]))
         .unwrap();
-        redirect_definition.resolve();
+        assert!(!redirect_definition.is_correct());
+        redirect_definition.resolve().await;
         assert!(redirect_definition.is_correct());
     }
 
-    #[test]
-    fn invalid_url_resolve() {
+    #[tokio::test]
+    async fn invalid_url_resolve() {
         let mut redirect_definition = RedirectDefinition::new(StringRecord::from(vec![
             "https://bitly.com/2YX2mnI",
-            "https://bitly.com/pages/wrong",
+            "pages/wrong",
         ]))
         .unwrap();
-        redirect_definition.resolve();
+        redirect_definition.resolve().await;
         assert!(!redirect_definition.is_correct());
     }
 }

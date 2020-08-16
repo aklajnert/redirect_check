@@ -5,10 +5,12 @@ use std::{io, process};
 
 use ansi_term::Color;
 
-mod redirect_definition;
 use crate::redirect_definition::RedirectDefinition;
 
-fn main() {
+mod redirect_definition;
+
+#[tokio::main]
+async fn main() {
     let path = get_path();
 
     let records = match read_csv(path) {
@@ -22,7 +24,7 @@ fn main() {
 
     let mut failed_records = vec![];
     for mut record in records {
-        record.resolve();
+        record.resolve().await;
         if record.is_correct() {
             println!("{}: {}", Color::Green.paint("OK"), record);
         } else {

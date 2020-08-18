@@ -6,6 +6,7 @@ use std::{io, process};
 use ansi_term::Color;
 
 use crate::redirect_definition::RedirectDefinition;
+use tokio::task::JoinHandle;
 
 mod redirect_definition;
 
@@ -13,17 +14,32 @@ mod redirect_definition;
 async fn main() {
     let path = get_path();
 
-    let mut records = match read_csv(path) {
+    let records = load_data_from_file(path);
+    println!("Loaded {} records. Checking...", records.len());
+
+    let records = join_tasks(spawn_tasks(records)).await;
+
+    let failed_records = records
+        .iter()
+        .filter(|record| !record.is_correct())
+        .collect::<Vec<_>>();
+
+    show_summary(records.len(), &failed_records);
+    pause();
+}
+
+fn load_data_from_file(path: PathBuf) -> Vec<RedirectDefinition> {
+    match read_csv(path) {
         Ok(records) => records,
         Err(error) => {
             eprintln!("Failed to load CSV data: {}", error);
             process::exit(1);
         }
-    };
-    let records_count = records.len();
+    }
+}
 
-    let mut failed_records = vec![];
-    let tasks: Vec<_> = records
+fn spawn_tasks(records: Vec<RedirectDefinition>) -> Vec<JoinHandle<RedirectDefinition>> {
+    records
         .into_iter()
         .map(|mut record| {
             tokio::spawn(async {
@@ -31,22 +47,15 @@ async fn main() {
                 record
             })
         })
-        .collect();
+        .collect()
+}
+
+async fn join_tasks(tasks: Vec<JoinHandle<RedirectDefinition>>) -> Vec<RedirectDefinition> {
     let mut records = vec![];
     for task in tasks {
         records.push(task.await.unwrap());
     }
-
-    for mut record in records.iter() {
-        if record.is_correct() {
-            println!("{}: {}", Color::Green.paint("OK"), record);
-        } else {
-            println!("{}: {}", Color::Red.paint("Fail"), record);
-            failed_records.push(record);
-        }
-    }
-    show_summary(records_count, &mut failed_records);
-    pause();
+    records
 }
 
 fn get_path() -> PathBuf {
@@ -83,7 +92,7 @@ fn read_csv(path: PathBuf) -> std::io::Result<Vec<RedirectDefinition>> {
                 process::exit(1);
             }
         };
-        if record_object.source.len() > 0 && record_object.target.len() > 0 {
+        if !record_object.source.is_empty() && !record_object.target.is_empty() {
             records.push(record_object);
         }
     }
@@ -91,8 +100,8 @@ fn read_csv(path: PathBuf) -> std::io::Result<Vec<RedirectDefinition>> {
     Ok(records)
 }
 
-fn show_summary(records_count: usize, failed_records: &mut Vec<&RedirectDefinition>) {
-    if failed_records.len() == 0 {
+fn show_summary(records_count: usize, failed_records: &[&RedirectDefinition]) {
+    if failed_records.is_empty() {
         println!("{}", Color::Green.paint("\nAll redirects are correct."));
     } else {
         println!(

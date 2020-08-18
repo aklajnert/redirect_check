@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt;
 
+use ansi_term::Color;
 use csv::StringRecord;
 
 #[derive(Debug, Default, Clone)]
@@ -32,7 +33,12 @@ impl RedirectDefinition {
     pub async fn resolve(&mut self) {
         let query_result = self.query().await;
         if query_result.is_ok() {
-            self.resolved_url = Some(query_result.unwrap().trim_end_matches('/').to_string())
+            self.resolved_url = Some(query_result.unwrap().trim_end_matches('/').to_string());
+            if self.is_correct() {
+                println!("{}: {}", Color::Green.paint("OK"), self);
+            } else {
+                println!("{}: {}", Color::Red.paint("Fail"), self);
+            }
         }
     }
 

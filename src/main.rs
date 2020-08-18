@@ -13,7 +13,7 @@ mod redirect_definition;
 async fn main() {
     let path = get_path();
 
-    let records = match read_csv(path) {
+    let mut records = match read_csv(path) {
         Ok(records) => records,
         Err(error) => {
             eprintln!("Failed to load CSV data: {}", error);
@@ -23,8 +23,21 @@ async fn main() {
     let records_count = records.len();
 
     let mut failed_records = vec![];
-    for mut record in records {
-        record.resolve().await;
+    let tasks: Vec<_> = records
+        .into_iter()
+        .map(|mut record| {
+            tokio::spawn(async {
+                record.resolve().await;
+                record
+            })
+        })
+        .collect();
+    let mut records = vec![];
+    for task in tasks {
+        records.push(task.await.unwrap());
+    }
+
+    for mut record in records.iter() {
         if record.is_correct() {
             println!("{}: {}", Color::Green.paint("OK"), record);
         } else {
@@ -78,7 +91,7 @@ fn read_csv(path: PathBuf) -> std::io::Result<Vec<RedirectDefinition>> {
     Ok(records)
 }
 
-fn show_summary(records_count: usize, failed_records: &mut Vec<RedirectDefinition>) {
+fn show_summary(records_count: usize, failed_records: &mut Vec<&RedirectDefinition>) {
     if failed_records.len() == 0 {
         println!("{}", Color::Green.paint("\nAll redirects are correct."));
     } else {

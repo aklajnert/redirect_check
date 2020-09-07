@@ -33,7 +33,7 @@ Press ENTER to exit...
 
 ## Installation
 
-You can download Windows binary from [releases page](https://github.com/aklajnert/redirect_check/), 
+You can download Windows binary from [releases page](https://github.com/aklajnert/redirect_check/releases), 
 or compile for your system using `cargo` by running the following command:  
 ```shell script
 cargo install --git https://github.com/aklajnert/redirect_check/

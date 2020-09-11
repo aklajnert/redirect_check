@@ -33,8 +33,7 @@ Press ENTER to exit...
 
 ## Installation
 
-You can download Windows binary from [releases page](https://github.com/aklajnert/redirect_check/releases), 
-or compile for your system using `cargo` by running the following command:  
+As I don't have a certificate to sign the binary, the only way to install it is via [cargo](https://doc.rust-lang.org/cargo/):  
 ```shell script
 cargo install --git https://github.com/aklajnert/redirect_check/
 ```
